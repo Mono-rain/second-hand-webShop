@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}搜索 - 网络商场系统{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <!-- 搜索框和筛选条件 -->
+    <div class="search-header">
+        <form action="{{ url_for('search.search') }}" method="get" class="search-form-large">
+            <div class="search-input-group">
+                <input type="text" name="q" value="{{ query }}" placeholder="搜索商品名称或描述..." 
+                       class="search-input-large" id="searchInput">
+                <button type="submit" class="search-btn-large">搜索</button>
+            </div>
+            
+            <!-- 自动补全建议 -->
+            {% if suggestions %}
+            <div class="search-suggestions">
+                <span>推荐搜索：</span>
+                {% for suggestion in suggestions %}
+                <a href="{{ url_for('search.search') }}?q={{ suggestion }}" class="suggestion-tag">{{ suggestion }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    <div class="search-layout">
+        <!-- 侧边栏筛选条件 -->
+        <aside class="search-sidebar">
+            <div class="filter-section">
+                <h4>商品分类</h4>
+                <div class="filter-options">
+                    <a href="{{ url_for('search.search') }}?q={{ query }}" 
+                       class="filter-option {% if category == 'all' %}active{% endif %}">全部分类</a>
+                    {% for cat in categories %}
+                    <a href="{{ url_for('search.search') }}?q={{ query }}&category={{ cat }}" 
+                       class="filter-option {% if category == cat %}active{% endif %}">
+                        {{ cat }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4>价格范围</h4>
+                <form method="get" class="price-filter">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="category" value="{{ category }}">
+                    <div class="price-inputs">
+                        <input type="number" name="min_price" value="{{ min_price }}" placeholder="最低价" class="price-input">
+                        <span>-</span>
+                        <input type="number" name="max_price" value="{{ max_price }}" placeholder="最高价" class="price-input">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline">应用</button>
+                </form>
+            </div>
+            
+            <div class="filter-section">
+                <h4>商品状况</h4>
+                <div class="filter-options">
+                    <a href="{{ url_for('search.search') }}?q={{ query }}&category={{ category }}" 
+                       class="filter-option {% if condition == 'all' %}active{% endif %}">全部</a>
+                    <a href="{{ url_for('search.search') }}?q={{ query }}&category={{ category }}&condition=new" 
+                       class="filter-option {% if condition == 'new' %}active{% endif %}">全新</a>
+                    <a href="{{ url_for('search.search') }}?q={{ query }}&category={{ category }}&condition=used" 
+                       class="filter-option {% if condition == 'used' %}active{% endif %}">二手</a>
+                </div>
+            </div>
+            
+            <!-- 热门搜索 -->
+            {% if popular_searches %}
+            <div class="filter-section">
+                <h4>热门搜索</h4>
+                <div class="popular-searches">
+                    {% for popular in popular_searches %}
+                    <a href="{{ url_for('search.search') }}?q={{ popular }}" class="popular-tag">{{ popular }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </aside>
+        
+        <!-- 搜索结果 -->
+        <main class="search-results">
+            <div class="results-header">
+                <h3>
+                    {% if query %}
+                        搜索 "{{ query }}" 的结果
+                    {% else %}
+                        所有商品
+                    {% endif %}
+                    <span class="results-count">(共 {{ pagination.total }} 个商品)</span>
+                </h3>
+                
+                <div class="sort-options">
+                    <select class="sort-select">
+                        <option value="newest">最新发布</option>
+                        <option value="price_asc">价格从低到高</option>
+                        <option value="price_desc">价格从高到低</option>
+                        <option value="popular">最受欢迎</option>
+                    </select>
+                </div>
+            </div>
+            
+            {% if items %}
+            <div class="results-grid">
+                {% for item in items %}
+                <div class="result-item">
+                    <div class="item-image">
+                        {% if item.images %}
+                            <img src="{{ item.get_display_image_url() }}" alt="{{ item.title }}">
+                        {% else %}
+                            <div class="image-placeholder">📦</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="item-details">
+                        <h4 class="item-title">
+                            <a href="{{ url_for('item.item_detail', item_id=item.id) }}">{{ item.title }}</a>
+                        </h4>
+                        <p class="item-description">{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</p>
+                        
+                        <div class="item-meta">
+                            <span class="item-price">¥{{ "%.2f"|format(item.price) }}</span>
+                            <span class="item-category">{{ item.category }}</span>
+                            <span class="item-condition">{{ item.condition }}</span>
+                        </div>
+                        
+                        <div class="item-actions">
+                            <a href="{{ url_for('item.item_detail', item_id=item.id) }}" class="btn btn-primary btn-sm">查看详情</a>
+                            
+                            {% if session.user_id %}
+                            <button class="btn btn-outline btn-sm favorite-btn {% if item.id in user_favorites %}favorited{% endif %}" 
+                                    data-item-id="{{ item.id }}">
+                                {{ '❤️' if item.id in user_favorites else '🤍' }}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('search.search', q=query, category=category, page=pagination.prev_num) }}" class="page-link">上一页</a>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        <a href="{{ url_for('search.search', q=query, category=category, page=page_num) }}" 
+                           class="page-link {% if page_num == pagination.page %}active{% endif %}">
+                            {{ page_num }}
+                        </a>
+                    {% else %}
+                        <span class="page-ellipsis">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('search.search', q=query, category=category, page=pagination.next_num) }}" class="page-link">下一页</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="no-results">
+                <div class="no-results-icon">🔍</div>
+                <h4>没有找到相关商品</h4>
+                <p>尝试调整搜索关键词或筛选条件</p>
+                <a href="{{ url_for('search.search') }}" class="btn btn-primary">浏览所有商品</a>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+
+<script>
+// 搜索自动补全
+document.getElementById('searchInput').addEventListener('input', function() {
+    const query = this.value;
+    if (query.length < 2) return;
+    
+    fetch(`/search/autocomplete?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            // 实现自动补全下拉框
+            console.log('Suggestions:', data.suggestions);
+        });
+});
+
+// 收藏功能
+document.querySelectorAll('.favorite-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const itemId = this.dataset.itemId;
+        // 收藏功能实现...
+    });
+});
+</script>
+
+<style>
+.search-page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.search-header {
+    margin-bottom: 2rem;
+}
+
+.search-form-large {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.search-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-input-large {
+    flex: 1;
+    padding: 1rem;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    font-size: 1.1rem;
+}
+
+.search-btn-large {
+    padding: 1rem 2rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.search-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 2rem;
+}
+
+.search-sidebar {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+}
+
+.filter-section {
+    margin-bottom: 2rem;
+}
+
+.filter-section h4 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-option {
+    padding: 0.5rem;
+    text-decoration: none;
+    color: #666;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+
+.filter-option:hover,
+.filter-option.active {
+    background: #007bff;
+    color: white;
+}
+
+.price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.price-input {
+    width: 80px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.results-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.result-item {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.item-image {
+    width: 120px;
+    height: 120px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-decoration: none;
+    color: #333;
+}
+
+.page-link.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem;
+}
+
+.no-results-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

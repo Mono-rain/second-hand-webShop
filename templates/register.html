@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - 网络商场系统{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>用户注册</h2>
+            <p>加入网络商场系统，开始您的交易之旅</p>
+        </div>
+        
+        <form action="{{ url_for('auth.register') }}" method="POST" class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" class="form-control" 
+                       value="{{ request.form.username if request.form.username }}"
+                       placeholder="请输入用户名（3-20位字母数字）" required
+                       pattern="[a-zA-Z0-9_]{3,20}">
+                <div class="form-feedback" id="usernameFeedback"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">邮箱地址</label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       value="{{ request.form.email if request.form.email }}"
+                       placeholder="请输入有效的邮箱地址" required>
+                <div class="form-feedback" id="emailFeedback"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">手机号码（可选）</label>
+                <input type="tel" id="phone" name="phone" class="form-control" 
+                       value="{{ request.form.phone if request.form.phone }}"
+                       placeholder="请输入手机号码">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       placeholder="请输入密码（至少6位）" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">确认密码</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
+                       placeholder="请再次输入密码" required>
+                <div class="form-feedback" id="passwordFeedback"></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="agree_terms" required>
+                    <span>我已阅读并同意 <a href="#terms" target="_blank">服务条款</a> 和 <a href="#privacy" target="_blank">隐私政策</a></span>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">注册账号</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>已有账号？ <a href="{{ url_for('auth.login') }}">立即登录</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    
+    // 用户名实时验证
+    usernameInput.addEventListener('blur', function() {
+        const username = this.value;
+        if (username.length < 3 || username.length > 20) {
+            showFeedback('usernameFeedback', '用户名必须是3-20位字母数字', 'error');
+            return;
+        }
+        
+        // AJAX检查用户名是否可用
+        fetch(`/auth/api/check_username?username=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.available) {
+                    showFeedback('usernameFeedback', '用户名可用', 'success');
+                } else {
+                    showFeedback('usernameFeedback', '用户名已被使用', 'error');
+                }
+            });
+    });
+    
+    // 邮箱实时验证
+    emailInput.addEventListener('blur', function() {
+        const email = this.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!emailRegex.test(email)) {
+            showFeedback('emailFeedback', '请输入有效的邮箱地址', 'error');
+            return;
+        }
+        
+        // AJAX检查邮箱是否已注册
+        fetch(`/auth/api/check_email?email=${encodeURIComponent(email)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.available) {
+                    showFeedback('emailFeedback', '邮箱可用', 'success');
+                } else {
+                    showFeedback('emailFeedback', '邮箱已被注册', 'error');
+                }
+            });
+    });
+    
+    // 密码确认验证
+    confirmPasswordInput.addEventListener('input', function() {
+        if (passwordInput.value !== this.value) {
+            showFeedback('passwordFeedback', '密码不匹配', 'error');
+        } else {
+            showFeedback('passwordFeedback', '密码匹配', 'success');
+        }
+    });
+    
+    function showFeedback(elementId, message, type) {
+        const element = document.getElementById(elementId);
+        element.textContent = message;
+        element.className = `form-feedback ${type}`;
+    }
+});
+</script>
+
+<style>
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    margin-right: 0.5rem;
+}
+
+.form-feedback {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.form-feedback.success {
+    color: #28a745;
+}
+
+.form-feedback.error {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
