@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} - 网络商场系统{% endblock %}
+
+{% block content %}
+<div class="item-detail-page">
+    <!-- 商品图片和基本信息 -->
+    <div class="item-detail-header">
+        <div class="item-gallery">
+            <!-- 主图 -->
+            <div class="main-image">
+                {% if item.images %}
+                    <img src="{{ item.get_display_image_url() }}" alt="{{ item.title }}" id="mainImage">
+                {% else %}
+                    <div class="image-placeholder-large">🖼️ 暂无图片</div>
+                {% endif %}
+            </div>
+            
+            <!-- 缩略图列表 -->
+            {% if item.images.count() > 1 %}
+            <div class="thumbnail-list">
+                {% for image in item.images %}
+                <div class="thumbnail {% if loop.first %}active{% endif %}" 
+                     data-image="{{ image.image_url }}">
+                    <img src="{{ image.image_url }}" alt="缩略图 {{ loop.index }}">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="item-info-sidebar">
+            <div class="item-basic-info">
+                <h1 class="item-title">{{ item.title }}</h1>
+                <div class="item-price-section">
+                    <span class="current-price">¥{{ "%.2f"|format(item.price) }}</span>
+                    {% if item.original_price %}
+                    <span class="original-price">¥{{ "%.2f"|format(item.original_price) }}</span>
+                    <span class="discount">
+                        省 ¥{{ "%.2f"|format(item.original_price - item.price) }}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="item-meta-info">
+                    <div class="meta-item">
+                        <span class="meta-label">分类:</span>
+                        <span class="meta-value">{{ item.category }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">状况:</span>
+                        <span class="meta-value">{{ item.condition }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">浏览量:</span>
+                        <span class="meta-value">{{ item.view_count }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">发布时间:</span>
+                        <span class="meta-value">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="seller-info">
+                <h3>卖家信息</h3>
+                <div class="seller-details">
+                    <div class="seller-avatar">👤</div>
+                    <div class="seller-text">
+                        <strong>{{ item.seller.username }}</strong>
+                        <span class="seller-credit">信用评分: {{ item.seller.credit_score }}</span>
+                    </div>
+                </div>
+                <button class="btn btn-outline contact-seller">💬 联系卖家</button>
+            </div>
+            
+            <div class="action-buttons">
+                {% if session.user_id and session.user_id != item.seller_id %}
+                    {% if item.status == 'available' %}
+                    <button class="btn btn-primary btn-buy" data-item-id="{{ item.id }}">
+                        🛒 立即购买
+                    </button>
+                    <button class="btn btn-outline favorite-main-btn {% if user_favorited %}favorited{% endif %}" 
+                            data-item-id="{{ item.id }}">
+                        {{ '❤️ 已收藏' if user_favorited else '🤍 加入收藏' }}
+                    </button>
+                    {% elif item.status == 'sold' %}
+                    <button class="btn btn-disabled" disabled>已售出</button>
+                    {% else %}
+                    <button class="btn btn-disabled" disabled>已预订</button>
+                    {% endif %}
+                {% elif session.user_id and session.user_id == item.seller_id %}
+                    <div class="owner-actions">
+                        <button class="btn btn-outline edit-item">编辑商品</button>
+                        {% if item.status == 'available' %}
+                        <button class="btn btn-outline mark-sold">标记为已售</button>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">登录后购买</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 商品详情描述 -->
+    <div class="item-detail-content">
+        <div class="detail-section">
+            <h3>商品描述</h3>
+            <div class="description-content">
+                {{ item.description|replace('\n', '<br>')|safe }}
+            </div>
+        </div>
+        
+        <!-- 交易说明 -->
+        <div class="detail-section">
+            <h3>交易说明</h3>
+            <div class="transaction-info">
+                <div class="info-item">
+                    <span class="info-icon">🚚</span>
+                    <div>
+                        <strong>物流方式</strong>
+                        <p>支持快递配送，具体运费联系卖家商议</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">🔄</span>
+                    <div>
+                        <strong>退换货政策</strong>
+                        <p>如商品与描述不符，可申请仲裁处理</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">🛡️</span>
+                    <div>
+                        <strong>交易保障</strong>
+                        <p>平台提供仲裁服务，保障交易安全</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 评论区（预留） -->
+        <div class="detail-section">
+            <h3>用户咨询</h3>
+            <div class="comments-section">
+                <div class="no-comments">
+                    <p>暂无用户咨询</p>
+                    <button class="btn btn-outline ask-question">💬 向卖家提问</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 图片切换
+document.querySelectorAll('.thumbnail').forEach(thumb => {
+    thumb.addEventListener('click', function() {
+        const mainImage = document.getElementById('mainImage');
+        const imageUrl = this.dataset.image;
+        
+        // 更新主图
+        mainImage.src = imageUrl;
+        
+        // 更新激活状态
+        document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// 收藏功能
+const favoriteBtn = document.querySelector('.favorite-main-btn');
+if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', function() {
+        const itemId = this.dataset.itemId;
+        
+        fetch(`/item/api/toggle_favorite/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.favorited) {
+                    this.innerHTML = '❤️ 已收藏';
+                    this.classList.add('favorited');
+                } else {
+                    this.innerHTML = '🤍 加入收藏';
+                    this.classList.remove('favorited');
+                }
+            } else {
+                alert(data.message);
+            }
+        });
+    });
+}
+
+// 购买功能
+const buyBtn = document.querySelector('.btn-buy');
+if (buyBtn) {
+    buyBtn.addEventListener('click', function() {
+        const itemId = this.dataset.itemId;
+        
+        if (!confirm('确定要购买此商品吗？')) return;
+        
+        fetch(`/item/create_order/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('订单创建成功！');
+                window.location.href = `/user/orders`;
+            } else {
+                alert(data.message);
+            }
+        });
+    });
+}
+</script>
+
+<style>
+.item-detail-page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.item-detail-header {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.main-image {
+    width: 100%;
+    height: 400px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.main-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.thumbnail-list {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.thumbnail {
+    width: 60px;
+    height: 60px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.thumbnail.active {
+    border-color: #007bff;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.item-price-section {
+    margin: 1rem 0;
+}
+
+.current-price {
+    font-size: 2rem;
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.original-price {
+    text-decoration: line-through;
+    color: #999;
+    margin-left: 0.5rem;
+}
+
+.discount {
+    background: #e74c3c;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.item-meta-info {
+    margin: 1rem 0;
+}
+
+.meta-item {
+    display: flex;
+    margin-bottom: 0.5rem;
+}
+
+.meta-label {
+    width: 80px;
+    color: #666;
+}
+
+.seller-info {
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+    margin: 1rem 0;
+}
+
+.seller-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.seller-avatar {
+    width: 40px;
+    height: 40px;
+    background: #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.action-buttons {
+    margin-top: 2rem;
+}
+
+.btn-buy {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.favorite-main-btn {
+    width: 100%;
+}
+
+.item-detail-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.detail-section {
+    margin-bottom: 2rem;
+}
+
+.detail-section h3 {
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.description-content {
+    line-height: 1.6;
+}
+
+.transaction-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.info-icon {
+    font-size: 1.5rem;
+}
+
+.no-comments {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.owner-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+</style>
+{% endblock %}

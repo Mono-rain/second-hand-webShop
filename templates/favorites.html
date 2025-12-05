@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+
+{% block title %}我的收藏 - 网络商场系统{% endblock %}
+
+{% block content %}
+<div class="favorites-page">
+    <div class="page-header">
+        <h1>❤️ 我的收藏</h1>
+        <p>您收藏的宝贝都在这里</p>
+    </div>
+
+    {% if favorite_items %}
+    <div class="favorites-stats">
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+                <span class="stat-number">{{ favorite_items|length }}</span>
+                <span class="stat-label">收藏商品</span>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+                <span class="stat-number">{{ price_drops }}</span>
+                <span class="stat-label">降价商品</span>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-info">
+                <span class="stat-number">{{ new_items }}</span>
+                <span class="stat-label">新上架</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="filter-group">
+            <label>排序方式：</label>
+            <select class="filter-select" id="sortSelect">
+                <option value="newest">最新收藏</option>
+                <option value="price_low">价格从低到高</option>
+                <option value="price_high">价格从高到低</option>
+                <option value="price_drop">降价最多</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>筛选：</label>
+            <select class="filter-select" id="statusSelect">
+                <option value="all">全部状态</option>
+                <option value="available">可购买</option>
+                <option value="price_drop">已降价</option>
+                <option value="sold">已售出</option>
+            </select>
+        </div>
+        
+        <div class="actions-group">
+            <button class="btn btn-outline" id="selectAllBtn">全选</button>
+            <button class="btn btn-outline" id="batchRemoveBtn">批量删除</button>
+            <button class="btn btn-primary" id="checkPriceBtn">检查降价</button>
+        </div>
+    </div>
+
+    <div class="favorites-grid" id="favoritesGrid">
+        {% for fav_info in favorite_items %}
+        {% set favorite = fav_info.favorite %}
+        {% set item = fav_info.item %}
+        <div class="favorite-item" data-item-id="{{ item.id }}" data-favorite-id="{{ favorite.id }}">
+            <div class="item-select">
+                <input type="checkbox" class="item-checkbox" value="{{ favorite.id }}">
+            </div>
+            
+            <div class="item-image">
+                <a href="{{ url_for('item.item_detail', item_id=item.id) }}">
+                    {% if item.images and item.images.count() > 0 %}
+                        {% set primary_image = item.images|selectattr('is_primary')|first %}
+                        {% if primary_image %}
+                            <img src="{{ primary_image.image_url }}" alt="{{ item.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        {% else %}
+                            <img src="{{ item.get_display_image_url() }}" alt="{{ item.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        {% endif %}
+                    {% endif %}
+                    <div class="image-placeholder" {% if item.images and item.images.count() > 0 %}style="display:none;"{% endif %}>📦</div>
+                </a>
+                
+                {% if item.status != 'available' %}
+                <div class="status-badge status-{{ item.status }}">
+                    {{ '已售出' if item.status == 'sold' else '已下架' }}
+                </div>
+                {% endif %}
+                
+                {% if fav_info.has_price_drop %}
+                <div class="price-drop-badge">
+                    🔥 降价 {{ ((favorite.price_snapshot - item.price) / favorite.price_snapshot * 100)|round(1) }}%
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="item-info">
+                <h3 class="item-title">
+                    <a href="{{ url_for('item.item_detail', item_id=item.id) }}">{{ item.title }}</a>
+                </h3>
+                
+                <div class="item-meta">
+                    <span class="item-category">{{ item.category or '未分类' }}</span>
+                    <span class="item-condition">
+                        {% if item.condition == 'new' %}全新
+                        {% elif item.condition == 'used' %}二手
+                        {% elif item.condition == 'refurbished' %}翻新
+                        {% else %}{{ item.condition }}{% endif %}
+                    </span>
+                    <span class="item-time">收藏于 {{ favorite.created_at.strftime('%Y-%m-%d') }}</span>
+                </div>
+                
+                <div class="price-comparison">
+                    <span class="current-price">¥{{ "%.2f"|format(item.price) }}</span>
+                    {% if fav_info.has_price_drop %}
+                    <span class="original-price">¥{{ "%.2f"|format(favorite.price_snapshot) }}</span>
+                    <span class="savings">省 ¥{{ "%.2f"|format(favorite.price_snapshot - item.price) }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="item-seller">
+                    <span class="seller-name">卖家: {{ item.seller.username }}</span>
+                    {% if item.seller.credit_score %}
+                    <span class="seller-credit">信用: {{ item.seller.credit_score }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="item-actions">
+                {% if item.status == 'available' %}
+                <a href="{{ url_for('item.item_detail', item_id=item.id) }}" class="btn btn-primary btn-sm">
+                    🛒 立即购买
+                </a>
+                {% else %}
+                <button class="btn btn-disabled btn-sm" disabled>
+                    {{ '已售出' if item.status == 'sold' else '已下架' }}
+                </button>
+                {% endif %}
+                
+                <button class="btn btn-outline btn-sm remove-favorite" data-favorite-id="{{ favorite.id }}">
+                    ❌ 取消收藏
+                </button>
+                
+                <button class="btn btn-outline btn-sm share-item" data-item-id="{{ item.id }}">
+                    📤 分享
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if favorite_items|length > 12 %}
+    <div class="pagination">
+        <div class="pagination-controls">
+            <button class="btn btn-outline btn-sm">上一页</button>
+            <span class="pagination-info">第 1 页，共 1 页</span>
+            <button class="btn btn-outline btn-sm">下一页</button>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">❤️</div>
+        <h3>您还没有收藏任何商品</h3>
+        <p>发现心动的商品，点击收藏按钮将它们保存到这里</p>
+        <div class="empty-actions">
+            <a href="{{ url_for('search.search') }}" class="btn btn-primary">去逛逛</a>
+            <a href="{{ url_for('home.homepage') }}" class="btn btn-outline">返回首页</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 全选功能
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    
+    selectAllBtn.addEventListener('click', function() {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        updateSelectAllButton();
+    });
+    
+    function updateSelectAllButton() {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        if (allChecked) {
+            selectAllBtn.textContent = '取消全选';
+        } else {
+            selectAllBtn.textContent = '全选';
+        }
+    }
+    
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectAllButton);
+    });
+    
+    // 批量删除
+    document.getElementById('batchRemoveBtn').addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+            .map(cb => cb.value);
+            
+        if (selectedIds.length === 0) {
+            alert('请选择要删除的收藏商品');
+            return;
+        }
+        
+        if (confirm(`确定要删除选中的 ${selectedIds.length} 个收藏吗？`)) {
+            // 发送批量删除请求 - 移除CSRF token
+            fetch('/user/favorites/batch_remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ favorite_ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || '删除失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+            });
+        }
+    });
+    
+    // 单个删除
+    document.querySelectorAll('.remove-favorite').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const favoriteId = this.dataset.favoriteId;
+            const itemElement = this.closest('.favorite-item');
+            
+            if (confirm('确定要取消收藏这个商品吗？')) {
+                // 修改第X行（单个删除部分）
+                fetch(`/user/favorites/${favoriteId}`, {  // 使用方案2的URL
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        itemElement.style.opacity = '0.5';
+                        setTimeout(() => {
+                            itemElement.remove();
+                            updateEmptyState();
+                        }, 300);
+                    } else {
+                        alert(data.message || '取消收藏失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('网络错误，请重试');
+                });
+            }
+        });
+    });
+    
+    // 检查降价
+    document.getElementById('checkPriceBtn').addEventListener('click', function() {
+        this.textContent = '检查中...';
+        this.disabled = true;
+        
+        fetch('/user/favorites/check_price_drops')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.price_drops > 0) {
+                        alert(`发现 ${data.price_drops} 个商品降价！`);
+                    } else {
+                        alert('暂无降价商品');
+                    }
+                    location.reload();
+                } else {
+                    alert(data.message || '检查失败，请稍后重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+            })
+            .finally(() => {
+                this.textContent = '检查降价';
+                this.disabled = false;
+            });
+    });
+    
+    // 分享功能
+    document.querySelectorAll('.share-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            const url = `${window.location.origin}/item/${itemId}`;
+            
+            // 简单的分享实现 - 复制链接到剪贴板
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('商品链接已复制到剪贴板！');
+                }).catch(() => {
+                    prompt('请手动复制商品链接：', url);
+                });
+            } else {
+                prompt('请手动复制商品链接：', url);
+            }
+        });
+    });
+    
+    // 排序和筛选功能
+    const sortSelect = document.getElementById('sortSelect');
+    const statusSelect = document.getElementById('statusSelect');
+    
+    if (sortSelect) sortSelect.addEventListener('change', applyFilters);
+    if (statusSelect) statusSelect.addEventListener('change', applyFilters);
+    
+    function applyFilters() {
+        const sortBy = sortSelect ? sortSelect.value : 'newest';
+        const statusFilter = statusSelect ? statusSelect.value : 'all';
+        
+        const items = Array.from(document.querySelectorAll('.favorite-item'));
+        
+        // 筛选
+        items.forEach(item => {
+            const statusBadge = item.querySelector('.status-badge');
+            const status = statusBadge ? 
+                (statusBadge.className.includes('sold') ? 'sold' : 'hidden') : 'available';
+            const hasPriceDrop = item.querySelector('.price-drop-badge') !== null;
+            
+            let show = true;
+            if (statusFilter === 'available' && status !== 'available') show = false;
+            if (statusFilter === 'price_drop' && !hasPriceDrop) show = false;
+            if (statusFilter === 'sold' && status !== 'sold') show = false;
+            
+            item.style.display = show ? '' : 'none';
+        });
+        
+        // 排序（简化版）
+        const visibleItems = items.filter(item => item.style.display !== 'none');
+        if (sortBy !== 'newest') {
+            // 这里可以添加更复杂的排序逻辑
+            console.log('排序功能:', sortBy);
+        }
+    }
+    
+    function updateEmptyState() {
+        const visibleItems = Array.from(document.querySelectorAll('.favorite-item'))
+            .filter(item => item.style.display !== 'none');
+            
+        if (visibleItems.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <p>没有找到符合条件的收藏商品</p>
+                    <button class="btn btn-outline" onclick="document.getElementById('statusSelect').value='all'; applyFilters()">
+                        显示全部收藏
+                    </button>
+                </div>
+            `;
+            document.getElementById('favoritesGrid').appendChild(noResults);
+        }
+    }
+});
+</script>
+
+<style>
+.favorites-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.favorites-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.filters-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.actions-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.favorites-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.favorite-item {
+    display: grid;
+    grid-template-columns: auto 120px 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.favorite-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.item-select {
+    padding-top: 0.5rem;
+}
+
+.item-image {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #666;
+    background: #f8f9fa;
+}
+
+.status-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+.status-sold {
+    background: #e74c3c;
+}
+
+.status-hidden {
+    background: #95a5a6;
+}
+
+.price-drop-badge {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.item-info {
+    padding: 0 1rem;
+}
+
+.item-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.item-title a {
+    color: #333;
+    text-decoration: none;
+}
+
+.item-title a:hover {
+    color: #007bff;
+}
+
+.item-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    flex-wrap: wrap;
+}
+
+.price-comparison {
+    margin: 0.5rem 0;
+}
+
+.current-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.original-price {
+    text-decoration: line-through;
+    color: #999;
+    margin-left: 0.5rem;
+}
+
+.savings {
+    background: #ffeaa7;
+    color: #d35400;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.item-seller {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    transition: background-color 0.3s;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+.btn-outline:hover {
+    background: #f8f9fa;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.btn-disabled {
+    background: #bdc3c7;
+    color: #7f8c8d;
+    cursor: not-allowed;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pagination-info {
+    color: #666;
+}
+
+.no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group, .actions-group {
+        justify-content: center;
+    }
+    
+    .favorite-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .item-image {
+        justify-self: center;
+    }
+    
+    .item-actions {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .item-info {
+        padding: 0;
+    }
+}
+</style>
+{% endblock %}

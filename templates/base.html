@@ -1,0 +1,112 @@
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/1234/1234567.png" type="image/png">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}网络商场系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <div class="nav-brand">
+                    <h1><a href="{{ url_for('home.homepage') }}">🛒 网络商场系统</a></h1>
+                </div>
+                
+                <!-- 搜索栏 -->
+                <div class="search-container">
+                    <form action="{{ url_for('search.search') }}" method="get" class="search-form">
+                        <input type="text" name="q" placeholder="搜索商品..." value="{{ request.args.get('q', '') }}">
+                        <button type="submit" class="search-btn">搜索</button>
+                    </form>
+                </div>
+                
+                <!-- 导航链接 -->
+                <div class="nav-links">
+                    <a href="{{ url_for('home.homepage') }}" class="nav-link">首页</a>
+                    <a href="{{ url_for('search.categories') }}" class="nav-link">分类浏览</a>
+                    
+                    {% if session.user_id %}
+                        <a href="{{ url_for('user.favorites') }}" class="nav-link">❤️ 我的收藏</a>
+                        <a href="{{ url_for('item.upload_item') }}" class="nav-link">📦 发布商品</a>
+                        <a href="{{ url_for('user.profile') }}" class="nav-link">👤 {{ session.username }}</a>
+                        <a href="{{ url_for('auth.logout') }}" class="nav-link">退出</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="nav-link">登录</a>
+                        <a href="{{ url_for('auth.register') }}" class="nav-link">注册</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 闪存消息 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- 页面具体内容 -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 网络商场系统 v1.0 </p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+
+<script>
+function toggleCategoryInput() {
+    const categorySelect = document.getElementById('category');
+    const customGroup = document.getElementById('customCategoryGroup');
+    
+    if (categorySelect.value === 'custom') {
+        customGroup.style.display = 'block';
+        // 清空自定义输入框
+        document.getElementById('new_category').value = '';
+    } else {
+        customGroup.style.display = 'none';
+        // 将选择的值同步到隐藏的自定义字段（可选）
+        document.getElementById('new_category').value = categorySelect.value;
+    }
+}
+
+// 表单提交前的验证
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const categorySelect = document.getElementById('category');
+    const newCategory = document.getElementById('new_category').value.trim();
+    
+    // 如果选择了自定义分类但未输入内容
+    if (categorySelect.value === 'custom' && !newCategory) {
+        e.preventDefault();
+        alert('请输入自定义分类名称');
+        document.getElementById('new_category').focus();
+        return false;
+    }
+    
+    // 如果未选择任何分类
+    if (!categorySelect.value) {
+        e.preventDefault();
+        alert('请选择或输入商品分类');
+        return false;
+    }
+});
+</script>
