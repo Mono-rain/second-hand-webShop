@@ -8,12 +8,12 @@ def init_db(app):
     
     with app.app_context():
         # 导入所有模型以确保它们被注册
-        from . import item, user
-        from . import order
+        # from . import item, user
+        # from . import order
         db.create_all()
         
         from .user import User, Admin
-        from .item import Item
+        from models.item import Item
         # 检查是否已有数据，避免重复插入
         if not User.query.first():
             # 创建测试用户

@@ -1,0 +1,34 @@
+{
+    "1": {
+        "CWE": "CWE-404",
+        "name": "Improper Resource Management",
+        "File": "D:/Study/task_management_system/source/Task.cpp",
+        "Line": "33",
+        "At": "Reminder* reminder = new Reminder()",
+        "Information": "'reminder' is initialized as a non-owner pointer with a newly created 'gsl::owner<>', which could lead to improper memory management."
+    },
+    "2": {
+        "CWE": "CWE-404",
+        "name": "Improper Resource Management",
+        "File": "D:/Study/task_management_system/source/User.cpp",
+        "Line": "16",
+        "At": "reminderTimer = new QTimer(this)",
+        "Information": "'reminderTimer' is assigned a newly created 'gsl::owner<>' to a non-owner 'QTimer*', which could lead to improper memory management."
+    },
+    "3": {
+        "CWE": "CWE-398",
+        "name": "Initialization Order",
+        "File": "D:/Study/task_management_system/source/User.cpp",
+        "Line": "16",
+        "At": "reminderTimer(new QTimer(this))",
+        "Information": "'reminderTimer' should be initialized in a member initializer of the constructor"
+    },
+    "4": {
+        "CWE": "CWE-476",
+        "name": "MagicNumber",
+        "File": "D:/Study/task_management_system/source/User.cpp",
+        "Line": "18",
+        "At": "reminderTimer->start(1000);  // 每秒检查一次任务提醒",
+        "Information": "1000 is a magic number; consider replacing it with a named constant"
+    }
+}

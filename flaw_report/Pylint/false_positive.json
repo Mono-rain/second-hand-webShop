@@ -1,0 +1,16 @@
+{
+    "1": {
+        "CWE": "W0718",
+        "name": "broad-exception-caught",
+        "File": "/home/szh/SoftEnginnering2025/routes/user_routes.py",
+        "Line": "80",
+        "At": "Catching too general exception Exception"
+    },
+    "2": {
+        "CWE": "W0621",
+        "name": "redefined-outer-name",
+        "File": "/home/szh/SoftEnginnering2025/app.py",
+        "Line": "11",
+        "At": "Redefining name 'app' from outer scope (line 36)"
+    }
+}

@@ -1,0 +1,72 @@
+{
+    "1": {
+        "CWE": "CWE-401",
+        "name": "MemoryLeakOnRealloc",
+        "File": "stdio/vcscanf.c",
+        "Line": "355",
+        "At": "else if (c == 'n' || c == 'N') { c = BUFFER;"
+    },
+    "2": {
+        "CWE": "CWE-476",
+        "name": "nullPointerRedundantCheck",
+        "File": "src/lexer.c",
+        "Line": "1604",
+        "At": "struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;"
+    },
+    "3": {
+        "CWE": "CWE-476",
+        "name": "nullPointerRedundantCheck",
+        "File": "src/lexer.c",
+        "Line": "1605",
+        "At": "char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;"
+    },
+    "4": {
+        "CWE": "CWE-89",
+        "name": "SQLInjection",
+        "File": "app.py",
+        "Line": "42",
+        "At": "cursor.execute(f\"SELECT * FROM users WHERE name='{name}'\")"
+    },
+    "5": {
+        "CWE": "CWE-502",
+        "name": "PickleDeserialization",
+        "File": "DataProcessor_flaw_named.py",
+        "Line": "28",
+        "At": "obj = pickle.loads(user_data['pickled'])"
+    },
+    "6": {
+        "CWE": "CWE-94",
+        "name": "CodeInjection",
+        "File": "DataProcessor.py",
+        "Line": "18",
+        "At": "result = eval(user_data['expression'])"
+    },
+    "7": {
+        "CWE": "CWE-200",
+        "name": "InformationExposure",
+        "File": "app.py",
+        "Line": "37",
+        "At": "app.run(debug=True)"
+    },
+    "8": {
+        "CWE": "CWE-918",
+        "name": "SSRF",
+        "File": "run.py",
+        "Line": "6",
+        "At": "app.run(debug=True, host='0.0.0.0', port=5000)"
+    },
+    "9": {
+        "CWE": "CWE-502",
+        "name": "ImportPickleModule",
+        "File": "DataProcessor.py",
+        "Line": "2",
+        "At": "import pickle"
+    },
+    "10": {
+        "CWE": "CWE-78",
+        "name": "ImportSubprocessModule",
+        "File": "DataProcessor.py",
+        "Line": "3",
+        "At": "import subprocess"
+    }
+}

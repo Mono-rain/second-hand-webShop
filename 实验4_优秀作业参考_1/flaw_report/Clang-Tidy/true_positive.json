@@ -1,0 +1,34 @@
+{
+    "1": {
+        "CWE": "CWE-476",
+        "name": "NULL Pointer Dereference",
+        "File": "D:/Study/task_management_system/source/Task.cpp",
+        "Line": "16",
+        "At": "pTag->setTagName(newTag.getTagName())",
+        "Information": "'pTag' is initialized to a null pointer, and its method is called without checking for null."
+    },
+    "2": {
+        "CWE": "CWE-415",
+        "name": "Double Free",
+        "File": "D:/Study/task_management_system/source/Task.cpp",
+        "Line": "74",
+        "At": "delete &reminders[i];",
+        "Information": "Deleting a pointer that is not marked 'gsl::owner<>'. Consider using a smart pointer instead to manage memory."
+    },
+    "3": {
+        "CWE": "CWE-415",
+        "name": "Use After Free",
+        "File": "D:/Study/task_management_system/source/ScheduleManager.cpp",
+        "Line": "76",
+        "At": "delete tagToDelete;  // 删除指针（不必要的操作）",
+        "Information": "Deleting a pointer that is not marked 'gsl::owner<>'. Consider using a smart pointer instead to manage memory."
+    },
+    "4":{
+        "CWE": "CWE-416",
+        "name": "Use After Free",
+        "File": "D:/Study/task_management_system/source/ScheduleManager.cpp",
+        "Line": "81",
+        "At": "qDebug() << tagToDelete->getTagInfo()",
+        "Information": "Memory was accessed after it was freed. Ensure that freed memory is not used further in the program."
+    }
+}

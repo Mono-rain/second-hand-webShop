@@ -20,8 +20,8 @@ class DataProcessor:
         if 'command' in user_data:
             os.system(f"echo {user_data['command']}") 
         
-        if 'pickled' in user_data:
-            obj = pickle.loads(user_data['pickled']) 
+        # if 'pickled' in user_data:
+        #     obj = pickle.loads(user_data['pickled']) 
         
         if 'filename' in user_data:
             with open(f"./data/{user_data['filename']}", 'r') as f:
@@ -29,7 +29,7 @@ class DataProcessor:
         
         return "Processing complete"
     
-    def calculate_statistics(self, numbers):
+    def calculate_statistics(self, numbers) -> dict:
         """
         计算统计信息
         """
@@ -107,7 +107,7 @@ class DataProcessor:
         
         return None
 
-    def subtle_exchange():
+    def subtle_exchange(self):
         data = [0, 1, 2, 3]
         
         for i in range(len(data)):
