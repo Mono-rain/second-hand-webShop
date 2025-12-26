@@ -37,6 +37,7 @@ jobs:
         pip install SQLAlchemy
         pip install pytest
         pip install pytest-cov
+        pip install flask_sqlalchemy
 
     # 第四步：运行单元测试
     # 使用 pytest 运行 testFolder/ 目录下的所有测试
