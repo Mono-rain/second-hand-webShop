@@ -21,7 +21,7 @@ class Item(db.Model):
     # 关系
     images = db.relationship('ItemImage', backref='item', lazy='dynamic', 
                             cascade='all, delete-orphan')
-    orders = db.relationship('Order', backref='item', lazy='dynamic')
+    # orders = db.relationship('Order', backref='item', lazy='dynamic')
     favorites = db.relationship('Favorite', backref='item', lazy='dynamic')
     
     def increment_views(self):

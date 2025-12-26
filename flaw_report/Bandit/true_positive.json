@@ -1,9 +1,0 @@
-{
-    "1": {
-        "CWE": "CWE-78",
-        "name": "OSCommandInjection",
-        "File": "DataProcessor.py",
-        "Line": "21",
-        "At": "os.system(f\"echo {user_data['command']}\")"
-    }
-}

@@ -17,8 +17,8 @@ class User(db.Model):
     # 关系
     items = db.relationship('Item', backref='seller', lazy='dynamic', 
                            cascade='all, delete-orphan')
-    orders = db.relationship('Order', backref='buyer', lazy='dynamic',
-                            foreign_keys='Order.buyer_id')
+    # orders = db.relationship('Order', backref='buyer', lazy='dynamic',
+    #                         foreign_keys='Order.buyer_id')
     favorites = db.relationship('Favorite', backref='user', lazy='dynamic',
                                cascade='all, delete-orphan')
     
